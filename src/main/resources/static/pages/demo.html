@@ -3,9 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>GetUserMedia实例</title>
+    <style type="text/css">
+        #videos{
+            position: absolute;
+            left: 30%;
+            overflow: auto;
+        }
+        #videos video{
+            width: 40%;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
-    <video id="video" autoplay></video>
+    <video id="videos" autoplay></video>
 </body>
 
 <script>
@@ -16,8 +27,9 @@
         video : true,
         audio : true
     },function (localMediaStream) {
-        var video = document.getElementById("video");
-        video.src = window.URL.createObjectURL(localMediaStream);
+        var video = document.getElementById("videos");
+        video.src = URL.createObjectURL(localMediaStream);
+        video.play();
         video.onloadedmetadata = function (ev) {
             console.log("Label: " + localMediaStream.label);
             console.log("AudioTracks" , localMediaStream.getAudioTracks());
