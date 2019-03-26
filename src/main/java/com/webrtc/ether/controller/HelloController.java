@@ -12,4 +12,9 @@ public class HelloController {
     public String sayHello(){
         return "Welcome to SpringBoot";
     }
+
+    @RequestMapping(value = "/demo")
+    public String demo(){
+        return "demo";
+    }
 }

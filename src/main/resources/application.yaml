@@ -1,2 +1,9 @@
 server:
   port: 8090
+logging:
+  path: E:/Project/IdeaProject/etherRTC/logs
+spring:
+  mvc:
+    view:
+      prefix: /pages/
+      suffix: .html
