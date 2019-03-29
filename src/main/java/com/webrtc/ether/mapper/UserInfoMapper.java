@@ -15,6 +15,9 @@ public interface UserInfoMapper {
     @Select("select * from user where id=#{id}")
     public UserInfo queryByID(Integer id);
 
+    @Select("select * from user where username=#{username} and password=#{password}")
+    public UserInfo queryByUsername(String username,String password);
+
     @Insert("insert into user(username,password,email,initTime) " +
             "values(#{username},#{password},#{email},#{initTime})")
     public int insertUser(UserInfo user);

@@ -3,8 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <title>用户登录</title>
-</head>
-<body>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <style type="text/css">
+        .col-center-block {
+            float: none;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
+        #backg{
+            background: -webkit-linear-gradient(left top, red , blue); /* Safari 5.1 - 6.0 */
+            background: -o-linear-gradient(bottom right, red, blue); /* Opera 11.1 - 12.0 */
+            background: -moz-linear-gradient(bottom right, red, blue); /* Firefox 3.6 - 15 */
+            background: linear-gradient(to bottom right, red , blue); /* 标准的语法（必须放在最后） */
+        }
+    </style>
+</head>
+<body >
+    <div class="container" style="display:flex;justify-content:center;align-items:center;width: 100%;height: 100%" id="backg">
+        <div class="row" style="margin-top: 15%;" id="panel1">
+            <div class="panel panel-default col-center-block">
+                <div class="panel-body">
+                    <form role="form">
+                        <div class="form-group">
+                            <label>用户名:</label>
+                            <input type="text" class="form-control" id="username" placeholder="请输入用户名:">
+                        </div>
+                        <div class="form-group">
+                            <label>密码:</label>
+                            <input type="text" class="form-control" id="password" placeholder="请输入密码:">
+                        </div>
+                        <div class="form-inline">
+                            <div class="form-group" style="width: 40%">
+                                <button class="btn btn-primary btn-block" type="submit" id="login" >登录</button>
+                            </div>
+                            <div class="form-group" style="margin-left: 10%">
+                                <url style="color: #4FA7ED;" id="regs">注册用户</url>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 15%;" id="panel2">
+            <div class="panel panel-default col-center-block">
+                <div class="panel-body">
+                    <form role="form">
+                        <div class="form-group">
+                            <label>用户名:</label>
+                            <input type="text" class="form-control" id="r_username" placeholder="请输入用户名:">
+                        </div>
+                        <div class="form-group">
+                            <label>密码:</label>
+                            <input type="text" class="form-control" id="r_password" placeholder="请输入密码:">
+                        </div>
+                        <div class="form-group">
+                            <label>邮箱:</label>
+                            <input type="text" class="form-control" id="r_email" placeholder="请输入邮箱:">
+                        </div>
+                        <div class="form-inline">
+                            <div class="form-group" style="width: 40%">
+                                <button class="btn btn-primary btn-block" type="submit" id="register" >注册</button>
+                            </div>
+                            <div class="form-group" style="margin-left: 20%">
+                                <url style="color: #4FA7ED;" id="back">返回</url>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#panel2").hide();
+    });
+
+    $("#login").click(function () {
+        var username = $("#username").val();
+        var password = $("#password").val();
+        var url = "/user/login";
+        $.post(url,{
+            username : username,
+            password : password
+        },function (json) {
+            
+        });
+    });
+
+    $("#regs").click(function () {
+        $("#panel2").show();
+        $("#panel1").hide();
+    });
+
+    $("#back").click(function () {
+        $("#panel2").hide();
+        $("#panel1").show();
+    });
+</script>
 </html>
