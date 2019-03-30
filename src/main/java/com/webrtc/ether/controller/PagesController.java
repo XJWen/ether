@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-public class HelloController {
+public class PagesController {
 
     @ResponseBody
     @RequestMapping("/hello")
@@ -17,4 +17,13 @@ public class HelloController {
     public String demo(){
         return "demo";
     }
+
+    @RequestMapping(value = "/")
+    public String user() { return "login"; }
+
+    @RequestMapping(value = "/room")
+    public String room() { return "room"; }
+
+    @RequestMapping(value = "/rtcConnection")
+    public String rtcConnection() { return "rtcConnection"; }
 }

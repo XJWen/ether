@@ -1,9 +1,11 @@
 package com.webrtc.ether.bean;
 
 
+import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
 
 import javax.validation.constraints.NotNull;
+import java.io.Serializable;
 
 /**
  * 用户注册表
