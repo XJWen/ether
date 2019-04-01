@@ -24,7 +24,7 @@
     <div id="wrapper">
         <nav class="navbar navbar-default navbar-fixed-top">
             <div class="brand">
-                <a href="rtcConnection.html">
+                <a href="chat.html">
                     <img src="img/rtc.png" alt="WebRTC Logo" class="img-responsive logo">
                 </a>
             </div>
@@ -40,16 +40,35 @@
         <div id="sidebar-nav" class="sidebar">
             <div class="sidebar-scroll">
                 <nav>
-
+                    <ul class="nav">
+                        <li>你好，<span id="username"></span></li>
+                        <li><input type="button" value="更新用户信息"></li>
+                        <!--通过建立连接来分配房间号-->
+                        <li><input type="button" value="建立连接" id="getConnect" class="btn btn-default"></li>
+                        <!--通过房间号进入房间-->
+                        <li><input type="text" value="输入房间号" id="connectRoom"><button class="btn btn-default" id="connectToOther">连接</button></li>
+                        <li><input type="button" value="离开大厅"></li>
+                    </ul>
                 </nav>
             </div>
         </div>
 
         <div class="main">
-            <div class="main-content" style="height: 100%;">
-                <iframe src="room.html" class="iframe_mx uicss-cn"></iframe>
+            <div class="main-content" style="height: 100%;position: relative">
+                <div id="room" class="iframe_mx">
+                    <video id="video" autoplay></video>
+                    <div style="position: absolute;left: 0;bottom: 0;width: 100%;text-align: center;color: #404040">
+                        <input type="button" value="关闭连接" id="closeConnection">
+                    </div>
+                </div>
+                <div style="float: left;width: 20%;height: 100%">
+                    <textarea placeholder="可以聊天"></textarea>
+                </div>
             </div>
         </div>
     </div>
 </body>
+<script>
+
+</script>
 </html>

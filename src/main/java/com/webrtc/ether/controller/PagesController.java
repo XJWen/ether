@@ -13,10 +13,6 @@ public class PagesController {
         return "Welcome to SpringBoot";
     }
 
-    @RequestMapping(value = "/demo")
-    public String demo(){
-        return "demo";
-    }
 
     @RequestMapping(value = "/")
     public String user() { return "login"; }
@@ -25,5 +21,5 @@ public class PagesController {
     public String room() { return "room"; }
 
     @RequestMapping(value = "/rtcConnection")
-    public String rtcConnection() { return "rtcConnection"; }
+    public String rtcConnection() { return "chat"; }
 }

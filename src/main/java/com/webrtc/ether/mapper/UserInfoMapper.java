@@ -22,7 +22,10 @@ public interface UserInfoMapper {
             "values(#{username},#{password},#{email},#{initTime})")
     public int insertUser(UserInfo user);
 
-    @Update("update user set username=#{username}," +
+    @Update("update user set username=#{username}" +
             "password=#{password},email=#{email},initTime=#{initTime} where id=#{id}")
     public int updateUser(UserInfo user);
+
+    @Update("update user set isload=#{isload} where username=#{username}")
+    public int updateLoadState(UserInfo userInfo);
 }

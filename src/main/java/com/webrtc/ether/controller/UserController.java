@@ -15,7 +15,24 @@ public class UserController {
     @Autowired
     UserInfoMapper userInfoMapper;
 
+    /**
+     * 用户退出
+     * **/
+    @PostMapping(value = "/exist",produces = {"application/json;charset=UTF-8"})
+    public JSONObject exist(String username){
+        JSONObject json = new JSONObject();
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUsername(username);
+        int flag = userInfoMapper.updateUser(userInfo);
+        log.info("登录状态(退出)："+flag);
+        json.put("state","succes");
+        json.put("code","200");
+        return json;
+    }
 
+    /**
+     * 用户登录
+     * **/
     @PostMapping(value = "/selectUser",produces = {"application/json;charset=UTF-8"})
     public JSONObject selectUserInfo(String username, String password){
         log.info("username:"+username+" password:"+password);
@@ -29,6 +46,9 @@ public class UserController {
         }
         jsonObject.put("state","success");
         jsonObject.put("code","200");
+        userInfo.setIsload("1");
+        int flag = userInfoMapper.updateUser(userInfo);
+        log.info("登录状态(登录)："+flag);
         return jsonObject;
     }
 
