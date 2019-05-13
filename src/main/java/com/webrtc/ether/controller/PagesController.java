@@ -20,6 +20,6 @@ public class PagesController {
     @RequestMapping(value = "/room")
     public String room() { return "room"; }
 
-    @RequestMapping(value = "/rtcConnection")
+    @RequestMapping(value = "/chat")
     public String rtcConnection() { return "chat"; }
 }

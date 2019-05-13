@@ -8,7 +8,7 @@ import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 
 /**
- * 用户注册表
+ * 用户类
  * **/
 @Data
 public class UserInfo {

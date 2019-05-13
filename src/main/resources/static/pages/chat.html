@@ -12,8 +12,12 @@
 
     <script src="https://cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
     <script src="https://cdn.bootcss.com/twitter-bootstrap/3.3.4/js/bootstrap.min.js"></script>
-    <script src="js/jquery.slimscroll.min.js"></script>
-    <script src="js/klorofil-common.js" ></script>
+    <script src="http://cdn.bootcss.com/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://cdn.bootcss.com/sockjs-client/1.1.4/sockjs.min.js"></script>
+    <!--<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>-->
+    <script src="js/adapter.js"></script>
+    <script src="js/jquery.slimscroll.min.js" charset="UTF-8"></script>
+    <script src="js/klorofil-common.js" charset="UTF-8"></script>
 </head>
 <body>
     <div id="loading">
@@ -25,7 +29,7 @@
         <nav class="navbar navbar-default navbar-fixed-top">
             <div class="brand">
                 <a href="chat.html">
-                    <img src="img/rtc.png" alt="WebRTC Logo" class="img-responsive logo">
+                    <img src="img/rtc.png" alt="WebRTC Logo" class="img-responsive logo" style="height: 50%">
                 </a>
             </div>
             <div class="container-fluid">
@@ -41,13 +45,16 @@
             <div class="sidebar-scroll">
                 <nav>
                     <ul class="nav">
-                        <li>你好，<span id="username"></span></li>
+                        <li>你好，<span id="username">admin</span></li>
                         <li><input type="button" value="更新用户信息"></li>
                         <!--通过建立连接来分配房间号-->
-                        <li><input type="button" value="建立连接" id="getConnect" class="btn btn-default"></li>
+                        <li><input type="text"  id="connectRoom" placeholder="输入房间号"></li>
                         <!--通过房间号进入房间-->
-                        <li><input type="text" value="输入房间号" id="connectRoom"><button class="btn btn-default" id="connectToOther">连接</button></li>
-                        <li><input type="button" value="离开大厅"></li>
+                        <li><input type="button" value="建立房间" id="createRoom" class="btn btn-default">
+                            <button class="btn btn-default" id="joinRoom">连接房间</button>
+                            <button class="btn btn-default" id="connection">连接视频</button>
+                        </li>
+                        <li><input type="button" value="离开大厅" id="leave"></li>
                     </ul>
                 </nav>
             </div>
@@ -56,19 +63,342 @@
         <div class="main">
             <div class="main-content" style="height: 100%;position: relative">
                 <div id="room" class="iframe_mx">
-                    <video id="video" autoplay></video>
+                    <video id="localvideo" autoplay style="max-width: 40%;height: 80%"></video>
+                    <video id="remotevideo" autoplay style="max-width: 40%;height: 80%"></video>
+                    <div style="float: right;max-width: 20%;height: 80%">
+                        <textarea placeholder="可以聊天" style="background: white"></textarea>
+                    </div>
                     <div style="position: absolute;left: 0;bottom: 0;width: 100%;text-align: center;color: #404040">
                         <input type="button" value="关闭连接" id="closeConnection">
                     </div>
-                </div>
-                <div style="float: left;width: 20%;height: 100%">
-                    <textarea placeholder="可以聊天"></textarea>
                 </div>
             </div>
         </div>
     </div>
 </body>
 <script>
+    var PeerConnection = (window.RTCPeerConnection|| window.webkitPeerConnection00 || window.webkitRTCPeerConnection || window.mozRTCPeerConnection);
+    var getUserMedia = navigator.getUserMedia || navigator.webKitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+    var nativeRTCIceCandidate = (window.RTCIceCandidate);
+    var nativeRTCSessionDescription = (window.RTCSessionDescription);
+    var iceServer = {
+      "iceServers" : [{
+          "url" : "stun:stun.l.google.com:19302"
+      }]
+    };
+
+    const offerOptions={
+        offerToReceiveVideo: 1,
+        offerToReceiveAudio :1
+    };
+
+    var localMediaStream = null;
+    var remoteMediaStream = null;
+    var room = "";
+    //本地Socket连接
+    var stompClient = null;
+    //此变量保存与本地相连的peer connection, 键为socket id,值为PeerConnection类型
+    var peerConnection = {};
+    //保存所有与本地连接的socket的id
+    var connections = [];
+    //保存所有的data channel，键为socket id，值通过PeerConnection实例的createChannel创建
+    var datachanels = {};
+    //创建本地RTCPeerConnection实例
+    var pc = new RTCPeerConnection(null);
+    var host = location.port;
+    var userName= "";
+
+
+    //非本地环境
+    var  Icepc = new RTCPeerConnection(iceServer);
+
+
+    $(document).ready(function () {
+        // $("#username").text(getCookie("name"));
+        // removeCookie("name");
+        getConnect();
+        getlocalMedia();
+    });
+    /**
+     * 当关闭浏览器窗口默认关闭连接
+     **/
+    window.onunload = function (ev) {  closeWebSocketConnect(); }
+
+    /**
+     *  创建房间号
+     **/
+    $("#createRoom").click(function () {
+        createRoom();
+    });
+    /**
+     *  根据房间号进入连接
+     * **/
+    $("#joinRoom").click(function () {
+        joinRoom();
+    });
+    $("#leave").click(function () {
+       closeWebSocketConnect();
+       /*window.history.back();*/
+        window.location.href=APP_PATH+"/";
+    });
+    $("#closeConnection").click(function () {
+        closePeerConnection();
+        alert('退出房间');
+    });
+
+
+
+    $("#connection").click(function () {
+        let roomid = $("#connectRoom").val();
+        let username = userName;
+        if (userName==="offer01"){
+            receiverAnswer(roomid,username);
+        } else {
+            username = "answer02";
+            stompClient.send("/app/"+roomid+"/RTC",{},JSON.stringify({
+                "roomname" : roomid,
+                "type" : "getSDP",
+                "username" : username
+            }));
+
+            stompClient.subscribe("/topic/"+roomid+"/response",function (response) {
+
+                var sdps = JSON.parse(response.body).data;
+                for (var i =0;i<sdps.length;i++){
+                    var otherusername = sdps[i].username;
+                    let otherdescription = sdps[i].description;
+                    let othertype = sdps[i].type;
+                    let otherSDP = {"type":othertype,"sdp":otherdescription};
+                    if (username!==otherusername){
+                        pc.setRemoteDescription(new RTCSessionDescription(otherSDP)).then();
+
+                        /*pc.addEventListener('addStream', gotRemoteMediaStream);*/
+                    }
+                }
+
+            });
+        }
+    });
+
+    /**
+     * 连接WebSocket
+     **/
+    function getConnect(){
+        var sock = new SockJS("http://127.0.0.1:8090/ether/chatWithRTC");
+        stompClient = Stomp.over(sock);
+        stompClient.connect({},function connectCallback(frame) {
+
+        },function connectError(error) {
+            alert("连接失败。");
+        })
+    }
+
+
+    /**
+     *  创建房间
+     **/
+    function createRoom() {
+        let roomid = $("#connectRoom").val();
+        pc.createDataChannel(roomid);
+        pc.addStream(localMediaStream);
+        pc.createOffer(offerOptions).then(createdOffer);
+
+        /*var username = $("#username").val();*/
+        /**
+         * 监听创建房间成功与否
+         * */
+        stompClient.subscribe("/topic/created",function (response) {
+            var message = JSON.parse(response.body).msg;
+            console.log(message.msg);
+
+        });
+
+    }
+
+    //进入房间
+    function joinRoom() {
+        console.log("pc:"+pc);
+        /*let username = $("#username").val();*/
+        let username = "answer02";
+        let roomid = $("#connectRoom").val();
+        pc.createDataChannel(roomid);
+        pc.addStream(localMediaStream);
+        pc.createAnswer().then(createdAnswer);
+
+        stompClient.subscribe("/topic/joined",function (response) {
+            var message = JSON.parse(response.body).msg;
+            console.log(message);
+        });
+    }
+
+
+    /**
+     *  创建房间者监听进入者的信令
+     **/
+    function receiverAnswer(roomid,username) {
+        stompClient.send("/app/"+roomid+"/RTC",{},JSON.stringify({
+            "roomname" : roomid,
+            "type" : "getSDP",
+            "username" : username
+        }));
+
+        stompClient.subscribe("/topic/"+roomid+"/response",function (response) {
+
+            var sdps = JSON.parse(response.body).data;
+            for (var i =0;i<sdps.length;i++){
+
+                var otherusername = sdps[i].username;
+                let otherdescription = sdps[i].description;
+                let othertype = sdps[i].type;
+                let otherSDP = {"type":othertype,"sdp":otherdescription};
+                if (username!==otherusername){
+                    pc.setRemoteDescription(new RTCSessionDescription(otherSDP)).then();
+
+                    /*pc.addEventListener('addStream', gotRemoteMediaStream);*/
+                }
+            }
+
+        });
+    }
+
+    //生成offer信令
+    function createdOffer(description) {
+        let roomid = $("#connectRoom").val();
+        pc.setLocalDescription(description).then(()=>{
+            console.log("创建offer信令"+description.sdp+",并且addStream");
+        });
+        createPeerConnection();
+        let name = "offer01";
+        userName = name;
+        stompClient.send("/app/createRoom",{},JSON.stringify({
+                'roomname' : roomid,
+                'username' : name,
+                'type' : description.type,
+                'socketid' : host,
+                "description" :description.sdp
+            })
+        );
+
+    }
+
+    //生产answer信令
+    function createdAnswer(description) {
+        let roomid = $("#connectRoom").val();
+        pc.setLocalDescription(description).then(()=>{
+            console.log("创建answer信令"+description.sdp+",并且addStream");
+        });
+        createPeerConnection();
+        let name = "answer02";
+        userName = name;
+        stompClient.send("/app/joinRoom",{},JSON.stringify({
+            'roomname' : roomid,
+            'username' : name,
+            'type' : description.type,
+            'socketid' : host,
+            "description" :description.sdp
+        }));
+    }
+
+    //获取本地流
+    function getlocalMedia() {
+
+       if (getUserMedia){
+              getUserMedia.call(navigator,{"video":true,"audio":true},function (stream) {
+                  localMediaStream = stream;
+                  var video = document.getElementById("localvideo");
+                  if (video.mozSrcObject!== undefined) {
+                      video.mozSrcObject = stream;
+                  }else {
+                      video.srcObject = stream;//本地video获取流
+                     /* video.src = window.URL&&window.URL.createObjectURL(stream);//本地video获取流*/
+                  }
+                  video.onloadedmetadata = function(e) {
+                      console.log("LocalLabel: " + localMediaStream.label);
+                      console.log("LocalAudioTracks" , localMediaStream.getAudioTracks());
+                      console.log("LocalVideoTracks" , localMediaStream.getVideoTracks());
+                      pc.addStream(stream);
+                  };
+                  video.play();
+              },function (e) {
+                  console.log("getLoaclMedia fail!")
+              })
+       }else {
+           alert('你的浏览器不支持WebRTC');
+           console.log("你的浏览器不支持WebRTC")
+       }
+    }
+
+    /**
+     *  远程连接添加视频流
+     * **/
+    function onRemoteStreamAdded(event) {
+        console.log("remote stream event:",event);
+        let MediaStream = event.stream;
+        remoteMediaStream = MediaStream;
+        let video2 = document.getElementById("remotevideo");
+        if (remoteMediaStream!==null){
+
+            if (video2.mozSrcObject!== undefined) {
+                video2.mozSrcObject = remoteMediaStream;
+                console.log("火狐浏览器对等连接获取远端视频流");
+            }else {
+                video2.srcObject = remoteMediaStream;
+                console.log("Chrome浏览器对等连接获取远端视频流");
+            }
+        }
+
+    }
+
+    function onIceCandidate(event) {
+        console.log('icecandidate event: ', event);
+    }
+
+    function onRemoveStream(event) {
+        console.log('removed stream event:',event);
+    }
+
+    function createPeerConnection() {
+        try{
+            pc.onicecandidate=onIceCandidate;
+            pc.onaddstream=onRemoteStreamAdded;
+            pc.onremovestream=onRemoveStream;
+            console.log('创建对等连接');
+        }catch (e) {
+            console.log('创建对等连接对象失败错误:'+e);
+        }
+    }
+
+    /**
+     * 离开大厅(断开WebSocket连接)
+     * */
+    function closeWebSocketConnect() {
+        if (stompClient!=null){
+            stompClient.disconnect();
+        }
+        console.log("Connect close");
+    }
+
+    function closePeerConnection() {
+        pc.close();
+    }
+
+/*    function setCookie(tJson,time) {
+        var date = new Date(new Date().getTime()+time*24*60*60*1000).toDateString();
+        for (var j in tJson){
+            document.cookie = j+"="+vJson[j]+"; expires="+date;
+        }
+    }
+
+    function getCookie(key){
+        var arr = document.cookie.match(new RegExp("(\\s|^)"+key+"=([^;]*)(;|$)"));//正则表达式验证
+        return arr?arr[2]:"";
+    }
+
+    function removeCookie(key){
+        var json = {};
+        json[key] = "";
+        setCookie(json , -1);//这里设置时间为负数就可以完成删除
+    }*/
 
 </script>
 </html>

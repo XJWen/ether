@@ -12,21 +12,23 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface RoomMapper {
     /**
-     * 进入房间
+     * 创建房间
      * **/
-    @Insert("insert into room(roomname,username,password) " +
-            "values(#{name},#{usersocketid},#{password})")
-    public int getConnection(Room room);
+    @Insert("insert into room(roomname,password) " +
+            "values(#{name},#{password})")
+    int getConnection(Room room);
+
+    /***
+     * 判断是否存在此房间
+     * **/
+    @Select("select * from room where roomname=#{roomname}")
+    Room selectRoomstate(String roomname);
 
     /**
-     * 离开房间
+     * 房间销毁
      * **/
-    @Delete("delete from room where username=#{usersocketid}")
-    public int closeConnection(String usersocketid);
+    @Delete("delete from room where roomname=#{roomname}")
+    int closeConnection(String roomname);
 
-    /**
-     * 查询当前房间的所有用户
-     * **/
-    @Select("select username from room where roomname=#{roomname}")
-    public Room getOtherUser(String roomname);
+
 }

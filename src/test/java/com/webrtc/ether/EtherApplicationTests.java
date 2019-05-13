@@ -13,7 +13,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(classes = EtherApplication.class,webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class EtherApplicationTests {
 
     @Autowired

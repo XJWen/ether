@@ -12,12 +12,16 @@ public class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry){
-        registry.addEndpoint("/chatWithRTC").withSockJS();
-        registry.addEndpoint("/chatWithMessage").withSockJS();
+        registry.addEndpoint("/chatWithRTC").setAllowedOrigins("*").withSockJS();
+        registry.addEndpoint("/chatWithMessage");
     }
-
+    /**
+     * 配置WebSocket 消息代理(MessageBroker)
+     **/
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/queue","/topic");
+        //点对点配置(/queue)，广播式配置一个(/topic)，群发(/mass)，单聊(/alone)
+        registry.enableSimpleBroker("/queue","/topic","/mass","/alone");
+        registry.setApplicationDestinationPrefixes("/app");
     }
 }

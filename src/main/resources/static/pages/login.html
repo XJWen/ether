@@ -8,6 +8,7 @@
 
     <script src="https://cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
     <script src="https://cdn.bootcss.com/twitter-bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script src="/ether/pages/js/adapter.js"></script>
     <style type="text/css">
         .col-center-block {
             float: none;
@@ -102,9 +103,33 @@
             password : password
         },function (json) {
             if (json.code==="200"){
-                window.location.href=APP_PATH+"/rtcConnection";
+                var User = {
+                  name : username
+                };
+               /* setCookie(User,5);*/
+                window.location.href=APP_PATH+"/chat";
+                /*window.location.href="chat.html";*/
             } else if (json.code==="400") {
                 alert("此用户不存在");
+                return;
+            }
+        });
+    });
+
+    $("#register").click(function () {
+        var username = $("#r_username").val();
+        var password = $("#r_password").val();
+        var email = $("#r_email").val();
+        var url = APP_PATH+"/user/registUser";
+        $.post(url,{
+            username : username,
+            password : password,
+            email : email
+        },function (json) {
+            if (json.code==="200"){
+                alert("用户"+username+"注册成功");
+            } else if (json.code==="400") {
+                alert("该用户已存在");
                 return;
             }
         });
@@ -119,5 +144,12 @@
         $("#panel2").hide();
         $("#panel1").show();
     });
+    
+ /*   function setCookie(tJson,time) {
+        var date = new Date(new Date().getTime()+time*24*60*60*1000).toDateString();
+        for (var j in tJson){
+            document.cookie = j+"="+vJson[j]+"; expires="+date;
+        }
+    }*/
 </script>
 </html>

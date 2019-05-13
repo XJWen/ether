@@ -13,19 +13,21 @@ import org.apache.ibatis.annotations.Update;
 public interface UserInfoMapper {
 
     @Select("select * from user where id=#{id}")
-    public UserInfo queryByID(Integer id);
+    UserInfo queryByID(Integer id);
 
     @Select("select * from user where username=#{username} and password=#{password}")
-    public UserInfo queryByUsername(String username,String password);
+    UserInfo queryByUsername(String username,String password);
 
-    @Insert("insert into user(username,password,email,initTime) " +
-            "values(#{username},#{password},#{email},#{initTime})")
-    public int insertUser(UserInfo user);
+    @Insert("insert into user values(#{username},#{password},#{email},#{initTime})")
+    int insertUser(UserInfo user);
 
-    @Update("update user set username=#{username}" +
-            "password=#{password},email=#{email},initTime=#{initTime} where id=#{id}")
-    public int updateUser(UserInfo user);
+    @Update("update user set username=#{username}," +
+            "password=#{password},email=#{email},initTime=#{initTime},isload=#{isload} where id=#{id}")
+    int updateUser(UserInfo user);
 
     @Update("update user set isload=#{isload} where username=#{username}")
-    public int updateLoadState(UserInfo userInfo);
+   int updateLoading(String username,String isload);
+
+    @Update("update user set isload=#{isload} where username=#{username}")
+    int updateLoadState(UserInfo userInfo);
 }
