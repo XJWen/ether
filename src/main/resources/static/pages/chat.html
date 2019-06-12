@@ -52,7 +52,7 @@
                         <!--通过房间号进入房间-->
                         <li><input type="button" value="建立房间" id="createRoom" class="btn btn-default">
                             <button class="btn btn-default" id="joinRoom">连接房间</button>
-                            <button class="btn btn-default" id="connection">连接视频</button>
+                            <button class="btn btn-default" id="connection">获取信令</button>
                         </li>
                         <li><input type="button" value="离开大厅" id="leave"></li>
                     </ul>
@@ -146,8 +146,9 @@
         alert('退出房间');
     });
 
-
-
+    /**
+     * 获取信令
+     * **/
     $("#connection").click(function () {
         let roomid = $("#connectRoom").val();
         let username = userName;
@@ -155,28 +156,9 @@
             receiverAnswer(roomid,username);
         } else {
             username = "answer02";
-            stompClient.send("/app/"+roomid+"/RTC",{},JSON.stringify({
-                "roomname" : roomid,
-                "type" : "getSDP",
-                "username" : username
-            }));
-
-            stompClient.subscribe("/topic/"+roomid+"/response",function (response) {
-
-                var sdps = JSON.parse(response.body).data;
-                for (var i =0;i<sdps.length;i++){
-                    var otherusername = sdps[i].username;
-                    let otherdescription = sdps[i].description;
-                    let othertype = sdps[i].type;
-                    let otherSDP = {"type":othertype,"sdp":otherdescription};
-                    if (username!==otherusername){
-                        pc.setRemoteDescription(new RTCSessionDescription(otherSDP)).then();
-
-                        /*pc.addEventListener('addStream', gotRemoteMediaStream);*/
-                    }
-                }
-
-            });
+            createPeerConnection();
+            pc.addStream(localMediaStream);
+            receiverOffer(roomid,username);
         }
     });
 
@@ -199,7 +181,11 @@
      **/
     function createRoom() {
         let roomid = $("#connectRoom").val();
+        if(roomid===null||roomid===""){
+            alert('未输入房间名');
+        }
         pc.createDataChannel(roomid);
+        createPeerConnection();
         pc.addStream(localMediaStream);
         pc.createOffer(offerOptions).then(createdOffer);
 
@@ -221,8 +207,10 @@
         /*let username = $("#username").val();*/
         let username = "answer02";
         let roomid = $("#connectRoom").val();
+        if(roomid===null||roomid===""){
+            alert('未输入房间名');
+        }
         pc.createDataChannel(roomid);
-        pc.addStream(localMediaStream);
         pc.createAnswer().then(createdAnswer);
 
         stompClient.subscribe("/topic/joined",function (response) {
@@ -259,6 +247,31 @@
             }
 
         });
+
+    }
+
+    function receiverOffer(roomid,username) {
+        stompClient.send("/app/"+roomid+"/RTC",{},JSON.stringify({
+            "roomname" : roomid,
+            "type" : "getSDP",
+            "username" : username
+        }));
+
+        stompClient.subscribe("/topic/"+roomid+"/response",function (response) {
+
+            var sdps = JSON.parse(response.body).data;
+            for (var i =0;i<sdps.length;i++){
+                var otherusername = sdps[i].username;
+                let otherdescription = sdps[i].description;
+                let othertype = sdps[i].type;
+                let otherSDP = {"type":othertype,"sdp":otherdescription};
+                if (username!==otherusername){
+                    pc.setRemoteDescription(new RTCSessionDescription(otherSDP)).then();
+
+                    /*pc.addEventListener('addStream', gotRemoteMediaStream);*/
+                }
+            }
+        });
     }
 
     //生成offer信令
@@ -267,7 +280,6 @@
         pc.setLocalDescription(description).then(()=>{
             console.log("创建offer信令"+description.sdp+",并且addStream");
         });
-        createPeerConnection();
         let name = "offer01";
         userName = name;
         stompClient.send("/app/createRoom",{},JSON.stringify({
@@ -287,7 +299,6 @@
         pc.setLocalDescription(description).then(()=>{
             console.log("创建answer信令"+description.sdp+",并且addStream");
         });
-        createPeerConnection();
         let name = "answer02";
         userName = name;
         stompClient.send("/app/joinRoom",{},JSON.stringify({
@@ -316,7 +327,6 @@
                       console.log("LocalLabel: " + localMediaStream.label);
                       console.log("LocalAudioTracks" , localMediaStream.getAudioTracks());
                       console.log("LocalVideoTracks" , localMediaStream.getVideoTracks());
-                      pc.addStream(stream);
                   };
                   video.play();
               },function (e) {
